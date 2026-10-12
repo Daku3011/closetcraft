@@ -9,6 +9,24 @@ define('UPLOAD_DIR', BASE_PATH . '/uploads/');
 define('DB_FILE', BASE_PATH . '/data/wardrobe.db');
 define('ALLOWED_IMG', ['jpg', 'jpeg', 'png', 'webp']);
 
+// .env loader (local dev convenience): KEY=value lines, # comments.
+// Real environment variables always win — .env never overrides them.
+// Get the template from .env.example; the real .env is never committed.
+$__envFile = BASE_PATH . '/.env';
+if (is_file($__envFile)) {
+    foreach (file($__envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $__line) {
+        $__line = trim($__line);
+        if ($__line === '' || $__line[0] === '#') continue;
+        $__parts = explode('=', $__line, 2);
+        if (count($__parts) !== 2) continue;
+        $__k = trim($__parts[0]);
+        $__v = trim(trim($__parts[1]), "\"'");
+        if ($__k !== '' && getenv($__k) === false) putenv($__k . '=' . $__v);
+    }
+    unset($__line, $__parts, $__k, $__v);
+}
+unset($__envFile);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
