@@ -1,35 +1,72 @@
 # ClosetCraft — Digital Wardrobe Planner
 
-B.Tech Web Technology project covering **all syllabus units**.
+Catalogue your clothes, generate head-to-toe outfits, and plan them on a calendar.
 
-## Features (project topic)
-- Upload clothing images + tag colors (`upload.php` + `uploads/`)
-- Filter by type, color, occasion (`closet.php?type=&color=&occasion=`)
-- Random outfit generator (`generator.php` + `api.php?action=random` via AJAX)
-- Save favorite outfits to a calendar (`outfits.php` → `calendar.php?m=YYYY-MM`)
+## Features
 
-## Run (needs PHP, any OS)
+- **Closet catalogue** — upload clothing photos, tag type, color, occasion, and gender (male / female / unisex)
+- **Smart filters** — slice your wardrobe by type, occasion, gender, color, or text search with live filtering
+- **Outfit generator** — occasion-aware shuffle that assembles a full fit (top + bottom *or* dress, plus shoes, outerwear, accessory), via AJAX or plain PHP
+- **Gender-aware styling** — male fits never include dresses; female fits can style around matching dresses
+- **Saved outfits** — name your favorite fits and pin them to dates
+- **Calendar view** — monthly grid showing which fit goes on which day
+- **Glass UI** — frosted-glass light and dark themes with a one-click toggle (preference saved in a cookie)
+- **JSON API** — `api.php?action=list|random|stats` for integrations
+
+## Tech stack
+
+PHP 8 + PDO (SQLite out of the box, MySQL script included) · HTML5 · CSS3 · JavaScript + jQuery · Bootstrap 5 (CDN) · No build step
+
+## Getting started
+
+Requirements: PHP 8+ (SQLite extension enabled, standard on most installs).
+
 ```bash
-# install PHP (mac): brew install php
+cd closetCraft
 php -S localhost:8000
-# open http://localhost:8000/index.php
 ```
-No MySQL needed — app auto-creates `data/wardrobe.db` (SQLite via PDO, prepared statements).
-MySQL version with **stored procedures** is in `database/closetcraft_mysql.sql`.
 
-## Syllabus mapping (for viva / report)
-| Unit | Where |
+Open http://localhost:8000/index.php — the SQLite database (`data/wardrobe.db`) is created automatically with demo items on first run.
+
+### Using MySQL instead
+
+1. Import `database/closetcraft_mysql.sql` (includes `GetItemsByOccasion` and `CountItemsByType` stored procedures).
+2. Point the PDO connection in `includes/db.php` at your MySQL server.
+
+## Usage
+
+1. **Add Item** — upload a photo (jpg/png/webp, ≤ 2MB), set type, color, occasion, and who it's for.
+2. **Closet** — filter and search; click Edit to retag anything, Delete to remove it.
+3. **Generator** — pick an occasion and style (male / female / unisex), hit Shuffle it, then Save with a name and calendar date.
+4. **Outfits** — open any saved fit to see every piece; **Calendar** shows fits by date.
+
+The more items you add per occasion, the more varied the shuffles get.
+
+## Project structure
+
+```
+index.php            home page
+closet.php           catalogue + filters
+upload.php           add / edit items (file uploads)
+generator.php        random fit generator + save form
+outfits.php          saved fits (detail view at ?view=ID)
+calendar.php         monthly plan (?m=YYYY-MM)
+api.php              JSON endpoints
+includes/            config, PDO database layer, header/footer
+assets/css|js        theme stylesheet, app scripts
+uploads/             uploaded item photos
+data/                SQLite database (auto-created, git-ignored)
+database/            MySQL schema + stored procedures
+```
+
+## API
+
+| Endpoint | Description |
 |---|---|
-| 1 HTTP, Client-Server, design, navigation | `includes/header.php` nav, this README, responsive layout |
-| 2 HTML tags, tables, links, images, meta, frames(iframe), forms, media, APIs, HTML5 validation | `index.php` (meta/video/iframe), `closet.php` (table), all forms use `required/pattern/accept` |
-| 3 CSS: variables, gradients, animation, positioning, media queries, `*` `^` `$`, Bootstrap | `assets/css/style.css` + Bootstrap CDN |
-| 4 JS: vars/arrays/functions/loops/popups/DOM/inbuilt/regex/events/callbacks/fn-args/JSON | `assets/js/app.js`, embedded script in `index.php`, internal script in `footer.php` |
-| 5 PHP: vars/decision/loop, PHP+HTML, arrays/functions/string, forms, uploads, dates/timezone, regex, exceptions, session/query-string/hidden/cookies/session-vars | `includes/config.php`, `upload.php`, `closet.php`, `calendar.php` |
-| 6 DB: connectivity, CRUD, prepared statements, stored procedures | `includes/db.php`, `api.php`, `database/closetcraft_mysql.sql` (`CALL GetItemsByOccasion`) |
-| 7 AJAX, JQuery, trends | `api.php` (JSON) + `fetch` + JQuery live search in `app.js` |
+| `api.php?action=list` | All closet items |
+| `api.php?action=random&occasion=party&style=male` | Random fit for an occasion + style |
+| `api.php?action=stats` | Item counts per type |
 
-## Demo flow for examiner
-1. `upload.php` — add item with photo + color (shows validation, file upload, regex, exception, prepared insert).
-2. `closet.php` — filter `?type=top&occasion=casual`, live search (JQuery), table (HTML tables), delete via query string.
-3. `generator.php` — click **Generate via AJAX** (popup + JSON + callback + hidden fields), then Save with calendar date.
-4. `calendar.php` — month grid (`?m=` navigation), outfits on dates. `api.php?action=stats` simulates stored-procedure output.
+## License
+
+MIT — free for personal and educational use.
