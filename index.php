@@ -2,9 +2,16 @@
 require_once __DIR__ . '/includes/db.php';
 pushRecent('Home');
 $db = getDB();
-$total = (int)$db->query("SELECT COUNT(*) FROM items")->fetchColumn();
-$outfits = (int)$db->query("SELECT COUNT(*) FROM outfits")->fetchColumn();
-$latest = $db->query("SELECT * FROM items ORDER BY id DESC LIMIT 4")->fetchAll(PDO::FETCH_ASSOC);
+$me = currentUser();
+if ($me) {
+  $uid = $me['id'];
+  $q = $db->prepare("SELECT COUNT(*) FROM items WHERE user_id=?"); $q->execute([$uid]);
+  $total = (int)$q->fetchColumn();
+  $q = $db->prepare("SELECT COUNT(*) FROM outfits WHERE user_id=?"); $q->execute([$uid]);
+  $outfits = (int)$q->fetchColumn();
+  $q = $db->prepare("SELECT * FROM items WHERE user_id=? ORDER BY id DESC LIMIT 4"); $q->execute([$uid]);
+  $latest = $q->fetchAll(PDO::FETCH_ASSOC);
+} else { $total = 0; $outfits = 0; $latest = []; }
 function gthumb(array $it): string {
   if (!empty($it['image_path']) && file_exists(__DIR__.'/'.$it['image_path'])) return e($it['image_path']);
   return placeholderImg($it['type'], $it['type']);
@@ -34,8 +41,13 @@ document.getElementById('promptGo')?.addEventListener('click', function () {
       <button class="prompt-go" id="promptGo" aria-label="Generate">&rarr;</button>
     </form>
     <div class="hero-cta">
-      <a href="upload.php" class="btn btn-dark">Get Started</a>
-      <a href="closet.php" class="btn btn-light">Explore closet</a>
+      <?php if ($me): ?>
+      <a href="upload.php" class="btn btn-dark">Add clothing</a>
+      <a href="generator.php" class="btn btn-light">Shuffle a fit</a>
+      <?php else: ?>
+      <a href="signup.php" class="btn btn-dark">Sign up free</a>
+      <a href="login.php" class="btn btn-light">Log in</a>
+      <?php endif; ?>
     </div>
     <p id="closetCount" class="hero-meta"></p>
   </div>
@@ -72,6 +84,7 @@ document.getElementById('promptGo')?.addEventListener('click', function () {
   </div>
 </section>
 
+<?php if ($me && $latest): ?>
 <section class="section">
   <h2>Fresh from your closet</h2>
   <p class="sub">Latest uploads, ready to style.</p>
@@ -87,6 +100,7 @@ document.getElementById('promptGo')?.addEventListener('click', function () {
     <?php endforeach; ?>
   </div>
 </section>
+<?php endif; ?>
 
 <section class="section">
   <h2>How it works</h2>
@@ -99,7 +113,7 @@ document.getElementById('promptGo')?.addEventListener('click', function () {
 
 <section class="cta-band">
   <div><h2>Seize the closet, start now.</h2><p>Add your first 5 items in under a minute.</p></div>
-  <a href="upload.php" class="btn btn-dark">Get started</a>
+  <a href="<?= $me ? 'upload.php' : 'signup.php' ?>" class="btn btn-dark">Get started</a>
 </section>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

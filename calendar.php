@@ -1,5 +1,7 @@
 <?php // calendar.php — Outfit calendar
 require_once __DIR__ . '/includes/db.php';
+requireLogin();
+$uid = currentUser()['id'];
 pushRecent('Calendar');
 $db = getDB();
 $month = $_GET['m'] ?? date('Y-m'); // query-string state: ?m=2026-10
@@ -7,8 +9,8 @@ if (!preg_match('/^\d{4}-\d{2}$/', $month)) $month = date('Y-m');
 $start = $month . '-01';
 $days = (int)date('t', strtotime($start));
 $firstDow = (int)date('w', strtotime($start)); // 0=Sun
-$stmt = $db->prepare("SELECT * FROM outfits WHERE substr(fav_date,1,7)=? ORDER BY fav_date");
-$stmt->execute([$month]);
+$stmt = $db->prepare("SELECT * FROM outfits WHERE user_id=? AND substr(fav_date,1,7)=? ORDER BY fav_date");
+$stmt->execute([$uid, $month]);
 $byDay = [];
 foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $o) { $byDay[substr($o['fav_date'],8,2)][] = $o; }
 $prev = date('Y-m', strtotime($start.' -1 month')); $next = date('Y-m', strtotime($start.' +1 month'));

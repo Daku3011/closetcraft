@@ -305,3 +305,11 @@ label { font-weight: 600; font-size: .86rem; color: var(--ink); }
   .nav-list .nav-link { padding: 6px 9px !important; font-size: .8rem; }
   form.row { flex-wrap: wrap; }
 }
+
+/* ---- auth ---- */
+.auth-wrap { display: flex; justify-content: center; padding: 2.5rem 0; }
+.auth-card { width: 100%; max-width: 420px; }
+.auth-card h2 { margin: 0; }
+.auth-card .sub { color: var(--muted); margin: .2rem 0 1rem; }
+.auth-swap { text-align: center; color: var(--muted); margin: 1rem 0 0; font-size: .9rem; }
+.user-chip { font-weight: 700; font-size: .85rem; color: var(--muted); white-space: nowrap; }
