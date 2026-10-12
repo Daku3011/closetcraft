@@ -49,7 +49,7 @@ include __DIR__ . '/includes/header.php';
       <option <?= $occasion===$o?'selected':'' ?> value="<?= $o ?>"><?= ucfirst($o) ?></option>
     <?php endforeach; ?></select></div>
   <div class="col-md-2"><select name="for" class="form-select">
-    <option value="">Male + Female</option>
+    <option value="">All genders</option>
     <?php foreach (['male','female','unisex'] as $g): ?>
       <option <?= $for===$g?'selected':'' ?> value="<?= $g ?>"><?= ucfirst($g) ?></option>
     <?php endforeach; ?></select></div>
