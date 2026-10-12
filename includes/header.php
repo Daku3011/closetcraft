@@ -26,6 +26,7 @@ function navCls(string $page, string $active): string { return $active === $page
       <a class="navbar-brand brand-logo" href="index.php">closetcraft</a>
       <div id="navMenu">
         <ul class="nav-list">
+          <li><a class="nav-link <?= navCls('index.php',$active) ?>" href="index.php">Home</a></li>
           <li><a class="nav-link <?= navCls('closet.php',$active) ?>" href="closet.php">Closet</a></li>
           <li><a class="nav-link <?= navCls('generator.php',$active) ?>" href="generator.php">Generator</a></li>
           <li><a class="nav-link <?= navCls('outfits.php',$active) ?>" href="outfits.php">Outfits</a></li>
