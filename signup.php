@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($exists->fetch()) throw new Exception("That email already has an account. Log in instead.");
     $stmt = $db->prepare("INSERT INTO users(name,email,password_hash,created_at) VALUES(?,?,?,?)");
     $stmt->execute([$name, $email, password_hash($pass, PASSWORD_DEFAULT), date('Y-m-d H:i:s')]);
-    $uid = (int)$db->lastInsertId();
+    $uid = dbLastId($db, 'users');
     // First account on this install inherits the demo/legacy items
     if ((int)$db->query("SELECT COUNT(*) FROM users")->fetchColumn() === 1) {
       $db->exec("UPDATE items SET user_id=$uid WHERE user_id IS NULL");

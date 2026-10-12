@@ -4,3 +4,8 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
+    # Paste your Supabase Postgres connection string in the Render dashboard
+    # (Environment -> DATABASE_URL). First deploy will prompt for it.
+    envVars:
+      - key: DATABASE_URL
+        sync: false

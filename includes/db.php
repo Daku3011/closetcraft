@@ -2,53 +2,79 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 
+// DATABASE_URL (e.g. postgresql://user:pass@host:5432/db) selects Postgres.
+// Unset => local SQLite file. Same code runs on both.
+function dbIsPostgres(): bool {
+    return (bool)getenv('DATABASE_URL');
+}
+
 function getDB(): PDO {
     static $pdo = null;
     if ($pdo instanceof PDO) return $pdo;
     try {
-        if (!is_dir(dirname(DB_FILE))) mkdir(dirname(DB_FILE), 0777, true);
-        $pdo = new PDO('sqlite:' . DB_FILE);
+        $pg = dbIsPostgres();
+        if ($pg) {
+            $p = parse_url((string)getenv('DATABASE_URL'));
+            $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s',
+                $p['host'] ?? 'localhost', $p['port'] ?? 5432, ltrim($p['path'] ?? '/closetcraft', '/'));
+            // Keep query flags like ?sslmode=require (needed by Supabase)
+            if (!empty($p['query'])) {
+                parse_str($p['query'], $q);
+                if (!empty($q['sslmode'])) $dsn .= ';sslmode=' . $q['sslmode'];
+            }
+            $user = isset($p['user']) ? rawurldecode($p['user']) : null;
+            $pass = isset($p['pass']) ? rawurldecode($p['pass']) : null;
+            $pdo = new PDO($dsn, $user, $pass);
+        } else {
+            if (!is_dir(dirname(DB_FILE))) mkdir(dirname(DB_FILE), 0777, true);
+            $pdo = new PDO('sqlite:' . DB_FILE);
+        }
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // Full final schema (all columns incl. later additions), so fresh
+        // databases on either dialect need no step-by-step migrations.
+        $id = $pg ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
         $pdo->exec("CREATE TABLE IF NOT EXISTS items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id $id,
             name TEXT NOT NULL,
             type TEXT NOT NULL CHECK(type IN ('top','bottom','dress','shoes','outerwear','accessory')),
             color TEXT NOT NULL,
             occasion TEXT NOT NULL CHECK(occasion IN ('casual','formal','party','sports','ethnic')),
+            for_gender TEXT DEFAULT 'unisex',
+            user_id INTEGER,
             image_path TEXT,
             created_at TEXT NOT NULL
         )");
         $pdo->exec("CREATE TABLE IF NOT EXISTS outfits (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id $id,
             name TEXT NOT NULL,
-            top_id INTEGER, bottom_id INTEGER, shoes_id INTEGER, accessory_id INTEGER,
+            top_id INTEGER, bottom_id INTEGER, dress_id INTEGER,
+            shoes_id INTEGER, outerwear_id INTEGER, accessory_id INTEGER,
             occasion TEXT NOT NULL,
+            style TEXT DEFAULT 'unisex',
+            user_id INTEGER,
             fav_date TEXT,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY(top_id) REFERENCES items(id),
-            FOREIGN KEY(bottom_id) REFERENCES items(id)
+            created_at TEXT NOT NULL
         )");
-        // Migration: newer columns for dress/outerwear slots + gender tagging + fit style
-        $cols = $pdo->query("PRAGMA table_info(outfits)")->fetchAll(PDO::FETCH_COLUMN, 1);
-        if (!in_array('dress_id', $cols, true)) $pdo->exec("ALTER TABLE outfits ADD COLUMN dress_id INTEGER");
-        if (!in_array('outerwear_id', $cols, true)) $pdo->exec("ALTER TABLE outfits ADD COLUMN outerwear_id INTEGER");
-        $ocols = $pdo->query("PRAGMA table_info(outfits)")->fetchAll(PDO::FETCH_COLUMN, 1);
-        if (!in_array('style', $ocols, true)) $pdo->exec("ALTER TABLE outfits ADD COLUMN style TEXT DEFAULT 'unisex'");
-        $icols = $pdo->query("PRAGMA table_info(items)")->fetchAll(PDO::FETCH_COLUMN, 1);
-        if (!in_array('for_gender', $icols, true)) $pdo->exec("ALTER TABLE items ADD COLUMN for_gender TEXT DEFAULT 'unisex'");
-        $pdo->exec("UPDATE items SET for_gender='unisex' WHERE for_gender IS NULL");
-        // Auth: users table + per-user ownership columns
         $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id $id,
             name TEXT NOT NULL,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
             created_at TEXT NOT NULL
         )");
-        $icols = $pdo->query("PRAGMA table_info(items)")->fetchAll(PDO::FETCH_COLUMN, 1);
-        if (!in_array('user_id', $icols, true)) $pdo->exec("ALTER TABLE items ADD COLUMN user_id INTEGER");
-        $ocols = $pdo->query("PRAGMA table_info(outfits)")->fetchAll(PDO::FETCH_COLUMN, 1);
-        if (!in_array('user_id', $ocols, true)) $pdo->exec("ALTER TABLE outfits ADD COLUMN user_id INTEGER");
+        // Bring pre-existing SQLite databases up to the same schema (portable statements only)
+        $extra = [
+            'outfits' => ['dress_id' => 'INTEGER', 'outerwear_id' => 'INTEGER', 'style' => "TEXT DEFAULT 'unisex'", 'user_id' => 'INTEGER'],
+            'items' => ['for_gender' => "TEXT DEFAULT 'unisex'", 'user_id' => 'INTEGER'],
+        ];
+        foreach ($extra as $table => $cols) {
+            foreach ($cols as $col => $typedef) {
+                if (!columnExists($pdo, $pg, $table, $col)) {
+                    $pdo->exec("ALTER TABLE $table ADD COLUMN $col $typedef");
+                }
+            }
+        }
+        $pdo->exec("UPDATE items SET for_gender='unisex' WHERE for_gender IS NULL");
         // Seed demo data on first run
         $count = (int)$pdo->query("SELECT COUNT(*) FROM items")->fetchColumn();
         if ($count === 0) seedDemo($pdo);
@@ -56,6 +82,23 @@ function getDB(): PDO {
         die("Database error: " . e($ex->getMessage()));
     }
     return $pdo;
+}
+
+// Portable column check (PRAGMA is SQLite-only)
+function columnExists(PDO $pdo, bool $pg, string $table, string $col): bool {
+    if ($pg) {
+        $s = $pdo->prepare("SELECT 1 FROM information_schema.columns WHERE table_name=? AND column_name=?");
+        $s->execute([$table, $col]);
+        return (bool)$s->fetchColumn();
+    }
+    $cols = $pdo->query("PRAGMA table_info($table)")->fetchAll(PDO::FETCH_COLUMN, 1);
+    return in_array($col, $cols, true);
+}
+
+// Portable last-insert id (Postgres needs the sequence name)
+function dbLastId(PDO $pdo, string $table): int {
+    if (dbIsPostgres()) return (int)$pdo->lastInsertId($table . '_id_seq');
+    return (int)$pdo->lastInsertId();
 }
 
 function seedDemo(PDO $pdo): void {
@@ -77,11 +120,8 @@ function seedDemo(PDO $pdo): void {
 
 /*
  * Stored procedure execution in PHP (MySQL version).
- * SQLite has no stored procedures, so for MySQL deployment use database/closetcraft_mysql.sql
- * which defines:  GetItemsByOccasion(p_occasion), CountItemsByType()
- * Example call:
- *   $mysqli = new mysqli("localhost","root","","closetcraft");
- *   $res = $mysqli->query("CALL GetItemsByOccasion('casual')");
- *   // or PDO: $pdo->query("CALL GetItemsByOccasion('casual')");
- * The api.php?action=stats simulates the stored-procedure result for the SQLite demo.
+ * SQLite/Postgres demos don't use stored procedures; for MySQL deployment use
+ * database/closetcraft_mysql.sql which defines GetItemsByOccasion(p_occasion),
+ * CountItemsByType(). Example: $pdo->query("CALL GetItemsByOccasion('casual')");
+ * The api.php?action=stats simulates the stored-procedure result for the demos.
  */

@@ -1,0 +1,23 @@
+# Local run with Postgres:  docker compose up --build
+# App: http://localhost:8080   (data persists in the pgdata volume)
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      PORT: 80
+      DATABASE_URL: postgresql://closet:closet@db:5432/closetcraft
+    depends_on:
+      - db
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: closet
+      POSTGRES_PASSWORD: closet
+      POSTGRES_DB: closetcraft
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

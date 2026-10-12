@@ -1,9 +1,9 @@
 FROM php:8.2-apache
 
-# PDO drivers for SQLite (default) + MySQL (optional)
-RUN apt-get update && apt-get install -y libsqlite3-dev \
+# PDO drivers: SQLite (local default) + Postgres (DATABASE_URL) + MySQL (optional)
+RUN apt-get update && apt-get install -y libsqlite3-dev libpq-dev \
  && rm -rf /var/lib/apt/lists/* \
- && docker-php-ext-install pdo pdo_sqlite pdo_mysql
+ && docker-php-ext-install pdo pdo_sqlite pdo_pgsql pdo_mysql
 
 COPY . /var/www/html/
 
