@@ -17,7 +17,13 @@ if (!isset($_COOKIE['cc_theme'])) {
     setcookie('cc_theme', 'light', time() + (30 * 24 * 60 * 60), '/');
 }
 
-// Flash message helpers (Session variables)
+// Auth helpers
+function currentUser(): ?array {
+    return $_SESSION['user'] ?? null;
+}
+function requireLogin(): void {
+    if (!currentUser()) { header('Location: login.php'); exit; }
+}
 function flash(string $msg, string $type = 'success'): void {
     $_SESSION['flash'] = ['msg' => $msg, 'type' => $type];
 }

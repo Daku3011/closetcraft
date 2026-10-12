@@ -2,6 +2,7 @@
 if (!defined('APP_NAME')) require_once __DIR__ . '/config.php';
 $theme = $_COOKIE['cc_theme'] ?? 'light';
 $active = basename($_SERVER['PHP_SELF'] ?? 'index.php');
+$user = currentUser();
 function navCls(string $page, string $active): string { return $active === $page ? 'active' : ''; }
 ?>
 <!DOCTYPE html>
@@ -27,12 +28,21 @@ function navCls(string $page, string $active): string { return $active === $page
       <div id="navMenu">
         <ul class="nav-list">
           <li><a class="nav-link <?= navCls('index.php',$active) ?>" href="index.php">Home</a></li>
+          <?php if ($user): ?>
           <li><a class="nav-link <?= navCls('closet.php',$active) ?>" href="closet.php">Closet</a></li>
           <li><a class="nav-link <?= navCls('generator.php',$active) ?>" href="generator.php">Generator</a></li>
           <li><a class="nav-link <?= navCls('outfits.php',$active) ?>" href="outfits.php">Outfits</a></li>
           <li><a class="nav-link <?= navCls('calendar.php',$active) ?>" href="calendar.php">Calendar</a></li>
+          <?php endif; ?>
         </ul>
-        <a href="upload.php" class="btn btn-sm btn-primary">Get started</a>
+        <?php if ($user): ?>
+        <a href="upload.php" class="btn btn-sm btn-primary">Add item</a>
+        <span class="user-chip">Hi, <?= e($user['name']) ?></span>
+        <a href="logout.php" class="btn btn-sm btn-light">Log out</a>
+        <?php else: ?>
+        <a href="login.php" class="btn btn-sm btn-light">Log in</a>
+        <a href="signup.php" class="btn btn-sm btn-primary">Sign up</a>
+        <?php endif; ?>
         <button id="themeBtn" class="btn btn-sm" aria-label="Toggle dark and light theme"><?= $theme==='dark' ? 'Light' : 'Dark' ?></button>
       </div>
     </div>

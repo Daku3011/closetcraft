@@ -1,6 +1,7 @@
 <?php // closet.php — Catalogue + Filter
 require_once __DIR__ . '/includes/db.php';
-pushRecent('Closet');
+requireLogin();
+$uid = currentUser()['id'];
 $type = $_GET['type'] ?? '';
 $color = $_GET['color'] ?? '';
 $occasion = $_GET['occasion'] ?? '';
@@ -9,7 +10,8 @@ $for = $_GET['for'] ?? '';
 setcookie('cc_last_filter', json_encode(compact('type','color','occasion')), time()+86400*7, '/');
 
 $db = getDB();
-$sql = "SELECT * FROM items WHERE 1=1"; $params = [];
+pushRecent('Closet for user '.$uid);
+$sql = "SELECT * FROM items WHERE user_id=?"; $params = [$uid];
 if ($type !== '') { $sql .= " AND type = ?"; $params[] = $type; }
 if ($occasion !== '') { $sql .= " AND occasion = ?"; $params[] = $occasion; }
 if ($for !== '') { $sql .= " AND for_gender = ?"; $params[] = $for; }
@@ -22,8 +24,8 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Delete via query string ?delete=id (CRUD)
 if (isset($_GET['delete'])) {
   try {
-    $del = $db->prepare("DELETE FROM items WHERE id = ?");
-    $del->execute([(int)$_GET['delete']]);
+    $del = $db->prepare("DELETE FROM items WHERE id = ? AND user_id = ?");
+    $del->execute([(int)$_GET['delete'], $uid]);
     flash("Item deleted.");
     header("Location: closet.php"); exit;
   } catch (Exception $ex) { flash("Delete failed: ".$ex->getMessage(), 'error'); }

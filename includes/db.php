@@ -37,6 +37,18 @@ function getDB(): PDO {
         $icols = $pdo->query("PRAGMA table_info(items)")->fetchAll(PDO::FETCH_COLUMN, 1);
         if (!in_array('for_gender', $icols, true)) $pdo->exec("ALTER TABLE items ADD COLUMN for_gender TEXT DEFAULT 'unisex'");
         $pdo->exec("UPDATE items SET for_gender='unisex' WHERE for_gender IS NULL");
+        // Auth: users table + per-user ownership columns
+        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )");
+        $icols = $pdo->query("PRAGMA table_info(items)")->fetchAll(PDO::FETCH_COLUMN, 1);
+        if (!in_array('user_id', $icols, true)) $pdo->exec("ALTER TABLE items ADD COLUMN user_id INTEGER");
+        $ocols = $pdo->query("PRAGMA table_info(outfits)")->fetchAll(PDO::FETCH_COLUMN, 1);
+        if (!in_array('user_id', $ocols, true)) $pdo->exec("ALTER TABLE outfits ADD COLUMN user_id INTEGER");
         // Seed demo data on first run
         $count = (int)$pdo->query("SELECT COUNT(*) FROM items")->fetchColumn();
         if ($count === 0) seedDemo($pdo);

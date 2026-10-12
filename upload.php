@@ -1,10 +1,12 @@
 <?php // upload.php — Upload clothing images + tag colors
 require_once __DIR__ . '/includes/db.php';
+requireLogin();
+$uid = currentUser()['id'];
 pushRecent('Upload');
 $db = getDB();
 $edit = null;
 if (isset($_GET['edit'])) { // query string + hidden form control demo
-  $s = $db->prepare("SELECT * FROM items WHERE id=?"); $s->execute([(int)$_GET['edit']]);
+  $s = $db->prepare("SELECT * FROM items WHERE id=? AND user_id=?"); $s->execute([(int)$_GET['edit'], $uid]);
   $edit = $s->fetch(PDO::FETCH_ASSOC);
 }
 
@@ -34,12 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $now = date('Y-m-d H:i:s');
     if ($id !== '') { // UPDATE (CRUD)
-      $stmt = $db->prepare("UPDATE items SET name=?,type=?,color=?,occasion=?,for_gender=?,image_path=? WHERE id=?");
-      $stmt->execute([$name,$type,strtolower($color),$occasion,$forGender,$imgPath,(int)$id]);
+      $stmt = $db->prepare("UPDATE items SET name=?,type=?,color=?,occasion=?,for_gender=?,image_path=? WHERE id=? AND user_id=?");
+      $stmt->execute([$name,$type,strtolower($color),$occasion,$forGender,$imgPath,(int)$id,$uid]);
       flash("Item updated.");
     } else { // CREATE (CRUD + prepared)
-      $stmt = $db->prepare("INSERT INTO items(name,type,color,occasion,for_gender,image_path,created_at) VALUES(?,?,?,?,?,?,?)");
-      $stmt->execute([$name,$type,strtolower($color),$occasion,$forGender,$imgPath,$now]);
+      $stmt = $db->prepare("INSERT INTO items(name,type,color,occasion,for_gender,user_id,image_path,created_at) VALUES(?,?,?,?,?,?,?,?)");
+      $stmt->execute([$name,$type,strtolower($color),$occasion,$forGender,$uid,$imgPath,$now]);
       flash("Item added to closet.");
     }
     header("Location: closet.php"); exit;

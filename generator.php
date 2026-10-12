@@ -1,26 +1,28 @@
 <?php // generator.php — Random outfit generator
 require_once __DIR__ . '/includes/db.php';
+requireLogin();
+$uid = currentUser()['id'];
 pushRecent('Generator');
 $db = getDB();
 
-function candidates(PDO $db, string $type): array {
-  $s = $db->prepare("SELECT * FROM items WHERE type=?");
-  $s->execute([$type]);
+function candidates(PDO $db, int $uid, string $type): array {
+  $s = $db->prepare("SELECT * FROM items WHERE type=? AND user_id=?");
+  $s->execute([$type, $uid]);
   $all = $s->fetchAll(PDO::FETCH_ASSOC);
   shuffle($all); // every page load / click gives a fresh order
   return $all;
 }
-function pick(PDO $db, string $type, string $occ, string $style = 'unisex'): ?array {
-  $all = candidates($db, $type);
+function pick(PDO $db, int $uid, string $type, string $occ, string $style = 'unisex'): ?array {
+  $all = candidates($db, $uid, $type);
   if ($style === 'male') $all = array_values(array_filter($all, fn($i) => ($i['for_gender'] ?? 'unisex') !== 'female'));
   if ($style === 'female') $all = array_values(array_filter($all, fn($i) => ($i['for_gender'] ?? 'unisex') !== 'male'));
   foreach ($all as $it) if ($it['occasion'] === $occ) return $it; // occasion first
   return $all[0] ?? null; // ...then anything, so a fit always assembles
 }
-function buildFit(PDO $db, string $occ, string $style = 'unisex'): array {
-  $fit = ['top'=>pick($db,'top',$occ,$style),'bottom'=>pick($db,'bottom',$occ,$style),
-          'dress'=>pick($db,'dress',$occ,$style),'shoes'=>pick($db,'shoes',$occ,$style),
-          'outerwear'=>pick($db,'outerwear',$occ,$style),'accessory'=>pick($db,'accessory',$occ,$style)];
+function buildFit(PDO $db, int $uid, string $occ, string $style = 'unisex'): array {
+  $fit = ['top'=>pick($db,$uid,'top',$occ,$style),'bottom'=>pick($db,$uid,'bottom',$occ,$style),
+          'dress'=>pick($db,$uid,'dress',$occ,$style),'shoes'=>pick($db,$uid,'shoes',$occ,$style),
+          'outerwear'=>pick($db,$uid,'outerwear',$occ,$style),'accessory'=>pick($db,$uid,'accessory',$occ,$style)];
   // Sensible rule: a fit is EITHER (top + bottom) OR a dress — never both.
   // Male style never gets a dress, so party looks always include a bottom.
   if ($style !== 'male' && $fit['dress'] && ($fit['dress']['occasion'] === $occ || (!$fit['top'] && !$fit['bottom']))) {
@@ -37,10 +39,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_outfit'])) {
   try {
     $name = trim($_POST['outfit_name'] ?? 'My Outfit');
     if (!preg_match('/^[A-Za-z0-9 ]{3,40}$/', $name)) throw new Exception("Outfit name invalid.");
-    $stmt = $db->prepare("INSERT INTO outfits(name,top_id,bottom_id,dress_id,shoes_id,outerwear_id,accessory_id,occasion,style,fav_date,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
+    $stmt = $db->prepare("INSERT INTO outfits(name,top_id,bottom_id,dress_id,shoes_id,outerwear_id,accessory_id,occasion,style,user_id,fav_date,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)");
     $int = fn($k) => ($_POST[$k] ?? '') !== '' ? (int)$_POST[$k] : null;
     $style = in_array($_POST['style'] ?? 'unisex', ['male','female','unisex'], true) ? $_POST['style'] : 'unisex';
-    $stmt->execute([$name,$int('top_id'),$int('bottom_id'),$int('dress_id'),$int('shoes_id'),$int('outerwear_id'),$int('accessory_id'),$_POST['occasion'],$style,$_POST['fav_date']?:null,date('Y-m-d H:i:s')]);
+    // Only save pieces the user actually owns
+    $own = function($k) use ($db, $uid, $int) {
+      $id = $int($k); if (!$id) return null;
+      $c = $db->prepare("SELECT id FROM items WHERE id=? AND user_id=?"); $c->execute([$id, $uid]);
+      return $c->fetch() ? $id : null;
+    };
+    $stmt->execute([$name,$own('top_id'),$own('bottom_id'),$own('dress_id'),$own('shoes_id'),$own('outerwear_id'),$own('accessory_id'),$_POST['occasion'],$style,$uid,$_POST['fav_date']?:null,date('Y-m-d H:i:s')]);
     flash("Outfit '$name' saved."); header("Location: outfits.php"); exit;
   } catch (Exception $ex) { flash($ex->getMessage(), 'error'); }
 }
@@ -78,7 +86,7 @@ include __DIR__ . '/includes/header.php';
 if (isset($_GET['go'])) {
   $occ = $_GET['occasion'] ?? 'casual';
   $style = in_array($_GET['style'] ?? 'unisex', ['male','female','unisex'], true) ? $_GET['style'] : 'unisex';
-  $combo = buildFit($db, $occ, $style);
+  $combo = buildFit($db, $uid, $occ, $style);
   // Don't show the excluded core piece (dress XOR top+bottom); other empty slots are informative
   $combo = array_filter($combo, fn($it, $k) => $it !== null || !in_array($k, ['top','bottom','dress'], true), ARRAY_FILTER_USE_BOTH);
   echo "<div class='card p-3'><h4>Your $occ fit for $style — full day, head to toe</h4>";
