@@ -7,6 +7,7 @@ let closetCache = []; // array
 document.addEventListener('DOMContentLoaded', function () {
   loadClosetCache();          // JSON + callbacks
   attachValidation();         // validations + regex
+  attachAuthValidation();     // signup / login checks
   attachPreview();            // File API
   const genBtn = document.getElementById('ajaxGenerate');
   if (genBtn) genBtn.addEventListener('click', onGenerateClick); // Event handling
@@ -20,6 +21,7 @@ function fetchJSON(url, onSuccess, onError) {
   fetch(url, { cache: 'no-store' }).then(r => r.json()).then(onSuccess).catch(onError || console.error);
 }
 function loadClosetCache() {
+  if (!window.CC_AUTH) return; // guests have no wardrobe — never call the API logged out
   fetchJSON('api.php?action=list',
     function (data) { closetCache = data.items || []; renderCount(); },  // callback
     function () { console.warn('API offline'); });
@@ -40,6 +42,11 @@ function onGenerateClick() {
   if (!confirm('Generate a random "' + occ + '" outfit (' + style + ')?')) return; // popup
   fetchJSON('api.php?action=random&occasion=' + encodeURIComponent(occ) + '&style=' + encodeURIComponent(style),
     function (res) {
+      if (res.status !== 'ok') { // e.g. session expired mid-use
+        alert(res.message || 'Something went wrong.');
+        if (res.message === 'Log in first') location.href = 'login.php';
+        return;
+      }
       alert(res.message || 'Outfit ready!'); // popup
       showOutfit(res.outfit, res.items);
       prompt('Like a name for this outfit? Type it, then Save below.', res.outfit?.name || '');
@@ -89,6 +96,25 @@ function attachValidation() {
     const colorRe = /^[A-Za-z#0-9]{3,20}$/;
     if (!nameRe.test(name)) { alert('Item name: 3-40 letters/numbers only.'); ev.preventDefault(); return false; }
     if (!colorRe.test(color)) { alert('Color is invalid.'); ev.preventDefault(); return false; }
+    return true;
+  });
+}
+// Signup + login validation (mirrors the server rules so bad data never posts)
+function attachAuthValidation() {
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const su = document.getElementById('signupForm');
+  if (su) su.addEventListener('submit', function (ev) {
+    const name = su.name.value.trim();
+    if (!/^[A-Za-z0-9 ]{2,40}$/.test(name)) { alert('Name: 2-40 letters/numbers.'); ev.preventDefault(); return false; }
+    if (!emailRe.test(su.email.value.trim())) { alert('Enter a valid email.'); ev.preventDefault(); return false; }
+    if (su.password.value.length < 6) { alert('Password must be 6+ characters.'); ev.preventDefault(); return false; }
+    if (su.confirm.value !== su.password.value) { alert('Passwords do not match.'); ev.preventDefault(); return false; }
+    return true;
+  });
+  const li = document.getElementById('loginForm');
+  if (li) li.addEventListener('submit', function (ev) {
+    if (!emailRe.test(li.email.value.trim())) { alert('Enter a valid email.'); ev.preventDefault(); return false; }
+    if (!li.password.value) { alert('Enter your password.'); ev.preventDefault(); return false; }
     return true;
   });
 }

@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!preg_match('/^[A-Za-z0-9 ]{2,40}$/', $name)) throw new Exception("Name: 2-40 letters/numbers.");
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new Exception("Enter a valid email.");
     if (strlen($pass) < 6) throw new Exception("Password must be 6+ characters.");
+    if ($pass !== ($_POST['confirm'] ?? '')) throw new Exception("Passwords do not match.");
     $db = getDB();
     $exists = $db->prepare("SELECT id FROM users WHERE email=?"); $exists->execute([$email]);
     if ($exists->fetch()) throw new Exception("That email already has an account. Log in instead.");
@@ -28,12 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/includes/header.php';
 ?>
 <div class="auth-wrap">
-  <form method="post" class="card p-3 auth-card">
+  <form method="post" id="signupForm" class="card p-3 auth-card">
     <h2>Sign up</h2>
     <p class="sub">Your clothes stay yours — private to your account.</p>
     <div class="mb-2"><label>Name*</label><input name="name" class="form-control" required minlength="2" maxlength="40" placeholder="Ava"></div>
     <div class="mb-2"><label>Email*</label><input name="email" type="email" class="form-control" required placeholder="ava@mail.com"></div>
     <div class="mb-2"><label>Password* (6+ characters)</label><input name="password" type="password" class="form-control" required minlength="6"></div>
+    <div class="mb-2"><label>Confirm password*</label><input name="confirm" type="password" class="form-control" required minlength="6"></div>
     <button class="btn btn-primary w-100">Create account</button>
     <p class="auth-swap">Have an account? <a href="login.php">Log in</a></p>
   </form>

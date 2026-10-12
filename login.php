@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include __DIR__ . '/includes/header.php';
 ?>
 <div class="auth-wrap">
-  <form method="post" class="card p-3 auth-card">
+  <form method="post" id="loginForm" class="card p-3 auth-card">
     <h2>Log in</h2>
     <div class="mb-2"><label>Email*</label><input name="email" type="email" class="form-control" required placeholder="ava@mail.com"></div>
     <div class="mb-2"><label>Password*</label><input name="password" type="password" class="form-control" required></div>
