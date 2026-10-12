@@ -37,7 +37,12 @@ Open http://localhost:8000/ — the SQLite database (`data/wardrobe.db`) is crea
 
 ### Deploying to Render
 
-The repo ships a `Dockerfile`, `.htaccess`, and `render.yaml` (Docker runtime — Render has no native PHP). Deploy via **New → Blueprint**, no build/start commands needed. Note: the free tier has no persistent disk, so uploads and DB changes made on the live site reset on redeploy — treat your local copy as the source of truth.
+The repo ships a `Dockerfile`, `.htaccess`, and `render.yaml` (Docker runtime — Render has no native PHP). Deploy via **New → Blueprint**, no build/start commands needed. Then add two things in the Render dashboard:
+
+1. **Database** — create a free Supabase project, copy its Postgres connection string (URI, with `?sslmode=require`), and set it as `DATABASE_URL`. Tables and seed data auto-create on first visit.
+2. **Photo storage** — in Supabase Storage create a bucket named `closet-images` and switch it to **Public**, then set `SUPABASE_URL` (project URL), `SUPABASE_KEY` (service_role key — server secret, never in JS), and `SUPABASE_BUCKET` if you used a different name.
+
+Without step 2 the app still runs, but uploaded photos live on Render's throwaway disk and vanish on restart. Without step 1 it falls back to SQLite, which also resets on restart. Your local copy (`php -S localhost:8000`, SQLite file + `uploads/` folder) always works with zero setup and is the source of truth.
 
 ## Usage
 

@@ -1,5 +1,6 @@
 <?php // upload.php — Upload clothing images + tag colors
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/storage.php';
 requireLogin();
 $uid = currentUser()['id'];
 pushRecent('Upload');
@@ -30,9 +31,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $ext = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
       if (!in_array($ext, ALLOWED_IMG, true)) throw new Exception("Only jpg/png/webp allowed.");
       if ($_FILES['photo']['size'] > 2*1024*1024) throw new Exception("Max 2MB.");
-      $fname = 'uploads/item_' . time() . '_' . rand(100,999) . '.' . $ext;
-      if (!move_uploaded_file($_FILES['photo']['tmp_name'], BASE_PATH.'/'.$fname)) throw new Exception("Move failed.");
-      $imgPath = $fname;
+      $mime = ($_FILES['photo']['type'] ?? '') ?: 'image/jpeg';
+      $fname = 'user' . $uid . '_' . time() . '_' . rand(100,999) . '.' . $ext;
+      if (storageEnabled()) {
+        // Permanent cloud storage — survives restarts
+        $imgPath = storageUpload($_FILES['photo']['tmp_name'], $fname, $mime);
+      } else {
+        // Local dev fallback
+        if (!move_uploaded_file($_FILES['photo']['tmp_name'], BASE_PATH.'/uploads/'.$fname)) throw new Exception("Move failed.");
+        $imgPath = 'uploads/'.$fname;
+      }
+      // Remove the replaced photo (best effort)
+      if (!empty($edit['image_path']) && $edit['image_path'] !== $imgPath) storageDelete($edit['image_path']);
     }
     $now = date('Y-m-d H:i:s');
     if ($id !== '') { // UPDATE (CRUD)

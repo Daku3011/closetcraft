@@ -14,9 +14,8 @@ function itemOf(PDO $db, int $uid, $id): ?array {
   return $s->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 function thumb(?array $it, string $label): string {
-  if ($it && !empty($it['image_path']) && file_exists(__DIR__.'/'.$it['image_path']))
-    return e($it['image_path']);
-  return placeholderImg($it['type'] ?? $label, $it['type'] ?? $label);
+  $src = imageSrc($it['image_path'] ?? null, '');
+  return $src !== '' ? e($src) : placeholderImg($it['type'] ?? $label, $it['type'] ?? $label);
 }
 $rows = $db->prepare("SELECT * FROM outfits WHERE user_id=? ORDER BY id DESC");
 $rows->execute([$uid]); $rows = $rows->fetchAll(PDO::FETCH_ASSOC);

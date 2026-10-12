@@ -13,8 +13,8 @@ if ($me) {
   $latest = $q->fetchAll(PDO::FETCH_ASSOC);
 } else { $total = 0; $outfits = 0; $latest = []; }
 function gthumb(array $it): string {
-  if (!empty($it['image_path']) && file_exists(__DIR__.'/'.$it['image_path'])) return e($it['image_path']);
-  return placeholderImg($it['type'], $it['type']);
+  $src = imageSrc($it['image_path'] ?? null, '');
+  return $src !== '' ? e($src) : placeholderImg($it['type'], $it['type']);
 }
 include __DIR__ . '/includes/header.php';
 ?>

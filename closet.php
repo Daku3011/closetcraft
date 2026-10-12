@@ -24,8 +24,12 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Delete via query string ?delete=id (CRUD)
 if (isset($_GET['delete'])) {
   try {
+    $one = $db->prepare("SELECT image_path FROM items WHERE id = ? AND user_id = ?");
+    $one->execute([(int)$_GET['delete'], $uid]);
+    $old = $one->fetchColumn();
     $del = $db->prepare("DELETE FROM items WHERE id = ? AND user_id = ?");
     $del->execute([(int)$_GET['delete'], $uid]);
+    storageDelete($old ?: null);
     flash("Item deleted.");
     header("Location: closet.php"); exit;
   } catch (Exception $ex) { flash("Delete failed: ".$ex->getMessage(), 'error'); }
@@ -63,8 +67,8 @@ include __DIR__ . '/includes/header.php';
 <div class="row">
 <?php foreach ($items as $it): ?>
   <div class="col-md-3 item-card">
-    <?php if ($it['image_path'] && file_exists(__DIR__.'/'.$it['image_path'])): ?>
-      <img src="<?= e($it['image_path']) ?>" alt="<?= e($it['name']) ?>">
+    <?php if (($src = imageSrc($it['image_path'] ?? null, '')) !== ''): ?>
+      <img src="<?= e($src) ?>" alt="<?= e($it['name']) ?>">
     <?php else: ?>
       <img src="<?= placeholderImg($it['type'], $it['type']) ?>" alt="no photo">
     <?php endif; ?>

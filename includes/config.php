@@ -61,3 +61,6 @@ function pushRecent(string $label): void {
     array_unshift($_SESSION['recent'], $label . ' @ ' . date('d-m-Y H:i'));
     $_SESSION['recent'] = array_slice($_SESSION['recent'], 0, 5);
 }
+
+// Photo storage helpers (local folder or Supabase — see includes/storage.php)
+require_once __DIR__ . '/storage.php';

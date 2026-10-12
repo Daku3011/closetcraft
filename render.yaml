@@ -4,8 +4,18 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
-    # Paste your Supabase Postgres connection string in the Render dashboard
-    # (Environment -> DATABASE_URL). First deploy will prompt for it.
+    # Paste these in the Render dashboard (Environment tab).
+    # First Blueprint deploy will prompt for each value.
+    # SUPABASE_URL e.g. https://xyzcompany.supabase.co
+    # SUPABASE_KEY = service_role key (server-only secret, never expose in JS)
+    # SUPABASE_BUCKET = public bucket name (create in Storage, Public ON)
+    # DATABASE_URL = Supabase Postgres connection string (?sslmode=require)
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: closet-images

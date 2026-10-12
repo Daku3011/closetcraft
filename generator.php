@@ -31,8 +31,8 @@ function buildFit(PDO $db, int $uid, string $occ, string $style = 'unisex'): arr
   return $fit;
 }
 function thumbSrc(?array $it, string $label): string {
-  if ($it && !empty($it['image_path']) && file_exists(__DIR__.'/'.$it['image_path'])) return e($it['image_path']);
-  return placeholderImg($it['type'] ?? $label, $it['type'] ?? $label);
+  $src = imageSrc($it['image_path'] ?? null, '');
+  return $src !== '' ? e($src) : placeholderImg($it['type'] ?? $label, $it['type'] ?? $label);
 }
 // Classic form POST save (non-AJAX fallback)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_outfit'])) {
