@@ -154,7 +154,18 @@ html[data-theme="dark"] .btn-danger { color: #ff8f84 !important; }
 
 /* ---- hero ---- */
 .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: center;
-  padding: 2.6rem 0 1rem; animation: fadeUp .6s ease; }
+  padding: 2.6rem 26px 1rem; margin: 0 -6px; border-radius: 28px;
+  background:
+    radial-gradient(420px 260px at 8% 20%, rgba(150,210,240,.5), transparent 65%),
+    radial-gradient(460px 300px at 95% 85%, rgba(255,255,255,.9), transparent 65%),
+    radial-gradient(500px 320px at 70% 0%, rgba(246,184,160,.35), transparent 65%);
+  animation: fadeUp .6s ease; }
+html[data-theme="dark"] .hero {
+  background:
+    radial-gradient(420px 260px at 8% 20%, rgba(120,180,240,.14), transparent 65%),
+    radial-gradient(460px 300px at 95% 85%, rgba(255,255,255,.07), transparent 65%),
+    radial-gradient(500px 320px at 70% 0%, rgba(246,184,160,.1), transparent 65%);
+}
 .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 600;
   color: var(--muted); background: var(--glass); border: 1px solid var(--glass-border);
   padding: 6px 14px; border-radius: 999px;
@@ -170,7 +181,8 @@ html[data-theme="dark"] .btn-danger { color: #ff8f84 !important; }
 
 .prompt-bar { display: flex; align-items: center; gap: 8px; background: var(--glass);
   border: 1px solid var(--glass-border); border-radius: 999px; padding: 6px 6px 6px 20px;
-  margin-top: 1.4rem; box-shadow: var(--shadow); max-width: 30rem;
+  margin-top: 1.4rem; max-width: 30rem;
+  box-shadow: var(--shadow), 0 0 44px rgba(150,210,240,.4);
   -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
 .prompt-bar input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: .95rem; }
 .prompt-bar input::placeholder { color: var(--muted); opacity: .8; }
@@ -234,10 +246,20 @@ html[data-theme="dark"] .btn-danger { color: #ff8f84 !important; }
   text-decoration: none; padding: 8px 18px; border-radius: 999px; font-size: .86rem; font-weight: 600;
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
 .chip:hover { background: var(--ink); color: var(--glass-strong); }
-.cta-band { margin-top: 3rem; background: var(--glass); border: 1px solid var(--glass-border);
+.cta-band { margin-top: 3rem; border: 1px solid var(--glass-border);
   border-radius: 26px; padding: 2.4rem; display: flex; align-items: center;
   justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  background:
+    radial-gradient(360px 220px at 5% 100%, rgba(150,210,240,.45), transparent 65%),
+    radial-gradient(380px 240px at 100% 0%, rgba(255,255,255,.85), transparent 60%),
+    var(--glass);
   -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: var(--shadow); }
+html[data-theme="dark"] .cta-band {
+  background:
+    radial-gradient(360px 220px at 5% 100%, rgba(120,180,240,.12), transparent 65%),
+    radial-gradient(380px 240px at 100% 0%, rgba(255,255,255,.06), transparent 60%),
+    var(--glass);
+}
 .cta-band h2 { margin: 0 0 .3rem; } .cta-band p { margin: 0; color: var(--muted); }
 
 /* ---- closet / crud ---- */
@@ -307,7 +329,19 @@ label { font-weight: 600; font-size: .86rem; color: var(--ink); }
 }
 
 /* ---- auth ---- */
-.auth-wrap { display: flex; justify-content: center; padding: 2.5rem 0; }
+.auth-wrap { display: flex; justify-content: center; padding: 2.5rem 20px;
+  border-radius: 28px;
+  background:
+    radial-gradient(400px 260px at 15% 30%, rgba(150,210,240,.4), transparent 65%),
+    radial-gradient(420px 280px at 85% 70%, rgba(255,255,255,.85), transparent 65%),
+    radial-gradient(380px 240px at 60% 100%, rgba(246,184,160,.3), transparent 65%);
+}
+html[data-theme="dark"] .auth-wrap {
+  background:
+    radial-gradient(400px 260px at 15% 30%, rgba(120,180,240,.12), transparent 65%),
+    radial-gradient(420px 280px at 85% 70%, rgba(255,255,255,.06), transparent 65%),
+    radial-gradient(380px 240px at 60% 100%, rgba(246,184,160,.08), transparent 65%);
+}
 .auth-card { width: 100%; max-width: 420px; }
 .auth-card h2 { margin: 0; }
 .auth-card .sub { color: var(--muted); margin: .2rem 0 1rem; }
